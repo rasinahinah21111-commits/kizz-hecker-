@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<title>Kizz Hecker</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+body {
+  margin: 0;
+  overflow-x: hidden;
+  font-family: monospace;
+  background: black;
+  color: #00ff00;
+  text-align: center;
+}
+
+/* LOGIN */
+#loginBox {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%,-50%);
+  background: rgba(0,0,0,0.85);
+  padding: 20px;
+  border: 1px solid #00ff00;
+  width: 90%;
+  max-width: 400px;
+}
+
+/* DASHBOARD */
+#dashboard {
+  display: none;
+  padding: 15px;
+}
+
+/* INPUT & BUTTON */
+input, button {
+  width: 100%;
+  box-sizing: border-box;
+  font-size: 16px;
+  margin: 5px 0;
+  padding: 10px;
+  background: black;
+  border: 1px solid #00ff00;
+  color: #00ff00;
+}
+
+/* FILE */
+.file {
+  border: 1px dashed #00ff00;
+  padding: 6px;
+  margin: 5px 0;
+  word-break: break-word;
+  cursor: pointer;
+}
+
+#fileBox {
+  margin-top: 10px;
+}
+
+video, audio {
+  width: 100%;
+  max-width: 320px;
+  margin-top: 10px;
+  border: 1px solid #00ff00;
+}
+
+/* MATRIX */
+canvas {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: -1;
+}
+
+/* WELCOME */
+#welcome {
+  position: fixed;
+  top:0;
+  left:0;
+  width:100%;
+  height:100%;
+  background:black;
+  color:#00ff00;
+  display:none;
+  justify-content:center;
+  align-items:center;
+  flex-direction:column;
+  font-size:24px;
+  z-index:9999;
+}
+</style>
+</head>
+
+<body>
+
+<canvas id="matrix"></canvas>
+
+<!-- LOGIN -->
+<div id="loginBox">
+  <h2>🔐 KIZZ HECKER LOGIN</h2>
+  <input type="text" id="user" placeholder="Username">
+  <input type="password" id="pass" placeholder="Password">
+  <button onclick="login()">LOGIN</button>
+</div>
+
+<!-- WELCOME -->
+<div id="welcome">
+  <div id="glitch">SYSTEM BOOTING...</div>
+  <p id="text"></p>
+</div>
+
+<!-- DASHBOARD -->
+<div id="dashboard">
+  <h2>💻 KIZZ HECKER SYSTEM</h2>
+
+  <input type="file" onchange="addFile(event)">
+
+  <div id="fileList"></div>
+
+  <div id="player"></div>
+</div>
+
+<script>
+
+// ===== LOGIN =====
+function login(){
+  let u = document.getElementById("user").value;
+  let p = document.getElementById("pass").value;
+
+  if(u === "kizz" && p === "smd"){
+    document.getElementById("loginBox").style.display = "none";
+    showWelcome();
+  } else {
+    alert("❌ ACCESS DENIED!");
+  }
+}
+
+// ===== WELCOME =====
+function showWelcome(){
+  let w = document.getElementById("welcome");
+  let g = document.getElementById("glitch");
+  let t = document.getElementById("text");
+
+  w.style.display = "flex";
+
+  let msg = ["ACCESS GRANTED", "LOADING SYSTEM...", "WELCOME KIZZ HECKER"];
+  let i = 0;
+
+  let glitch = setInterval(()=>{
+    g.innerText = msg[i % msg.length];
+    i++;
+  },300);
+
+  setTimeout(()=>{
+    t.innerText = "Selamat datang Kizz Hecker ⚡";
+  },1200);
+
+  setTimeout(()=>{
+    clearInterval(glitch);
+    w.style.display = "none";
+    document.getElementById("dashboard").style.display = "block";
+  },3000);
+}
+
+// ===== FILE SYSTEM =====
+let files = JSON.parse(localStorage.getItem("kizz_files") || "[]");
+
+function save(){
+  localStorage.setItem("kizz_files", JSON.stringify(files));
+}
+
+function addFile(event){
+  let file = event.target.files[0];
+  let url = URL.createObjectURL(file);
+
+  let type = "apk";
+  if(file.type.includes("video")) type = "video";
+  else if(file.type.includes("audio")) type = "audio";
+
+  files.push({
+    name: file.name,
+    url: url,
+    type: type
+  });
+
+  save();
+  render();
+}
+
+function render(){
+  let list = document.getElementById("fileList");
+  list.innerHTML = "";
+
+  files.forEach((f,i)=>{
+    let icon = f.type === "video" ? "🎬" : f.type === "audio" ? "🎵" : "📦";
+
+    list.innerHTML += `
+      <div class="file" onclick="openFile(${i})">
+        ${icon} ${f.name}
+      </div>
+    `;
+  });
+}
+
+function openFile(i){
+  let f = files[i];
+  let p = document.getElementById("player");
+
+  if(f.type === "video"){
+    p.innerHTML = `<video controls autoplay src="${f.url}"></video>`;
+  }
+  else if(f.type === "audio"){
+    p.innerHTML = `<audio controls autoplay src="${f.url}"></audio>`;
+  }
+  else{
+    p.innerHTML = `<p>📦 ${f.name}</p>`;
+  }
+}
+
+window.onload = render;
+
+// ===== MATRIX =====
+const canvas = document.getElementById("matrix");
+const ctx = canvas.getContext("2d");
+
+function resize(){
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+}
+resize();
+window.addEventListener("resize", resize);
+
+let letters = "01";
+letters = letters.split("");
+let fontSize = 14;
+let columns = Math.floor(window.innerWidth / fontSize);
+let drops = Array(columns).fill(1);
+
+function draw(){
+  ctx.fillStyle = "rgba(0,0,0,0.08)";
+  ctx.fillRect(0,0,canvas.width,canvas.height);
+
+  ctx.fillStyle = "#00ff00";
+  ctx.font = fontSize + "px monospace";
+
+  for(let i=0;i<drops.length;i++){
+    let text = letters[Math.floor(Math.random()*letters.length)];
+    ctx.fillText(text, i*fontSize, drops[i]*fontSize);
+
+    if(drops[i]*fontSize > canvas.height && Math.random()>0.975){
+      drops[i]=0;
+    }
+    drops[i]++;
+  }
+}
+
+setInterval(draw,33);
+
+</script>
+
+</body>
+</html>
